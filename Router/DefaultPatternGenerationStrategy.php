@@ -19,6 +19,7 @@ class DefaultPatternGenerationStrategy implements PatternGenerationStrategyInter
     const STRATEGY_PREFIX = 'prefix';
     const STRATEGY_PREFIX_EXCEPT_DEFAULT = 'prefix_except_default';
     const STRATEGY_CUSTOM = 'custom';
+    const STRATEGY_CUSTOM_WITH_LOCALES_IN_ONE_DOMAIN = 'cutom_with_locales_in_one_domain';
 
     private $strategy;
     private $translator;
@@ -26,8 +27,9 @@ class DefaultPatternGenerationStrategy implements PatternGenerationStrategyInter
     private $locales;
     private $cacheDir;
     private $defaultLocale;
+    private $localesInOneDomain;
 
-    public function __construct($strategy, TranslatorInterface $translator, array $locales, $cacheDir, $translationDomain = 'routes', $defaultLocale = 'en')
+    public function __construct($strategy, TranslatorInterface $translator, array $locales, $cacheDir, $translationDomain = 'routes', $defaultLocale = 'en', $localesInOneDomain = [])
     {
         $this->strategy = $strategy;
         $this->translator = $translator;
@@ -35,6 +37,7 @@ class DefaultPatternGenerationStrategy implements PatternGenerationStrategyInter
         $this->locales = $locales;
         $this->cacheDir = $cacheDir;
         $this->defaultLocale = $defaultLocale;
+        $this->localesInOneDomain = $localesInOneDomain;
     }
 
     /**
@@ -71,6 +74,10 @@ class DefaultPatternGenerationStrategy implements PatternGenerationStrategyInter
                     $i18nPattern = $route->getOption('i18n_prefix').$i18nPattern;
                 }
             }
+
+            if (self::STRATEGY_CUSTOM_WITH_LOCALES_IN_ONE_DOMAIN === $this->strategy && !empty($this->localesInOneDomain) && in_array($locale, $this->localesInOneDomain)){
+                    $i18nPattern = '/' . $locale . $i18nPattern;
+			}
 
             $patterns[$i18nPattern][] = $locale;
         }

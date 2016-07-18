@@ -68,6 +68,14 @@ final class Configuration implements ConfigurationInterface
                 ->end()
                 ->children()
                     ->scalarNode('default_locale')->isRequired()->end()
+                    ->arrayNode('locales_in_domain')
+                        ->beforeNormalization()
+                            ->ifString()
+                            ->then(function($v) { return preg_split('/\s*,\s*/', $v); })
+                        ->end()
+                        ->requiresAtLeastOneElement()
+                        ->prototype('scalar')->end()
+                    ->end()
                     ->arrayNode('locales')
                         ->beforeNormalization()
                             ->ifString()
@@ -80,23 +88,13 @@ final class Configuration implements ConfigurationInterface
                     ->scalarNode('strategy')
                         ->defaultValue('custom')
                         ->validate()
-                            ->ifNotInArray(array('prefix', 'prefix_except_default', 'custom'))
-                            ->thenInvalid('Must be one of the following: prefix, prefix_except_default, or custom (default)')
+                            ->ifNotInArray(array('prefix', 'prefix_except_default', 'custom', 'cutom_with_locales_in_one_domain'))
+                            ->thenInvalid('Must be one of the following: prefix, prefix_except_default, custom (default), or cutom_with_locales_in_one_domain')
                         ->end()
                     ->end()
                     ->booleanNode('prefix_with_locale')->defaultFalse()->end()
                     ->booleanNode('omit_prefix_when_default')->defaultTrue()->end()
                     ->arrayNode('hosts')
-                        ->validate()
-                            ->always()
-                            ->then(function($v) {
-                                if (count($v) !== count(array_flip($v))) {
-                                    throw new \Exception('Every locale must map to a different host. You cannot have multiple locales map to the same host.');
-                                }
-
-                                return $v;
-                            })
-                        ->end()
                         ->useAttributeAsKey('locale')
                         ->prototype('scalar')->end()
                     ->end()

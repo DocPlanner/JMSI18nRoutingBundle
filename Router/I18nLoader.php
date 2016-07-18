@@ -35,11 +35,13 @@ class I18nLoader
 
     private $routeExclusionStrategy;
     private $patternGenerationStrategy;
+    private $localesInOneDomain;
 
-    public function __construct(RouteExclusionStrategyInterface $routeExclusionStrategy, PatternGenerationStrategyInterface $patternGenerationStrategy)
+    public function __construct(RouteExclusionStrategyInterface $routeExclusionStrategy, PatternGenerationStrategyInterface $patternGenerationStrategy, $localesInOneDomain)
     {
         $this->routeExclusionStrategy = $routeExclusionStrategy;
         $this->patternGenerationStrategy = $patternGenerationStrategy;
+        $this->localesInOneDomain = $localesInOneDomain;
     }
 
     public function load(RouteCollection $collection)
@@ -53,13 +55,12 @@ class I18nLoader
         foreach ($collection->all() as $name => $route) {
             if ($this->routeExclusionStrategy->shouldExcludeRoute($name, $route)) {
                 $i18nCollection->add($name, $route);
-                continue;
             }
 
             foreach ($this->patternGenerationStrategy->generateI18nPatterns($name, $route) as $pattern => $locales) {
                 // If this pattern is used for more than one locale, we need to keep the original route.
                 // We still add individual routes for each locale afterwards for faster generation.
-                if (count($locales) > 1) {
+                if (count($locales) > 1 && false !== $route->getOption('i18n')) {
                     $catchMultipleRoute = clone $route;
                     $catchMultipleRoute->setPath($pattern);
                     $catchMultipleRoute->setDefault('_locales', $locales);
@@ -67,6 +68,9 @@ class I18nLoader
                 }
 
                 foreach ($locales as $locale) {
+                    if ($route->getOption('i18n') === false && !in_array($locale, $this->localesInOneDomain)){
+                        continue;
+                    }
                     $localeRoute = clone $route;
                     $localeRoute->setPath($pattern);
                     $localeRoute->setDefault('_locale', $locale);
